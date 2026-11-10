@@ -1,0 +1,18 @@
+# Secrets
+*.pem
+*.key
+.env
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log
+
+# Ansible
+*.retry
+
+# OS / editor
+.DS_Store
+.vscode/
