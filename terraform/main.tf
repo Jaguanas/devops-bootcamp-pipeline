@@ -29,16 +29,19 @@ resource "aws_instance" "my_instance" {
   instance_type          = "t3.medium" # Jenkins + Maven/Docker builds need more than 1 GB RAM
   vpc_security_group_ids = [aws_security_group.web_sg.id]
   iam_instance_profile   = "Bootcamp-Instance-Profile"
-  
+
   # Bash bootstrap (first boot only): tools the Ansible playbook relies on.
   # Jenkins, Java, NGINX and the app are installed by the Ansible playbook.
   user_data = <<-EOT
     #!/bin/bash
+    set -e
     export DEBIAN_FRONTEND=noninteractive
-    apt-get update -y
-    apt-get install -y docker.io git ansible
+    APT="apt-get -o DPkg::Lock::Timeout=300 -y"
+    $APT update
+    $APT install docker.io git ansible
     systemctl enable --now docker
     usermod -aG docker ubuntu
+    usermod -aG docker ssm-user || true
     echo "bootstrap complete: $(date)" > /var/log/bootstrap-done.txt
     EOT
 
