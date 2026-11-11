@@ -1,11 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-# Purpose: Install basic DevOps tools on Ubuntu.
-# Target: Ubuntu automation/build machine.
-# Usage: sudo bash scripts/install.sh
-# This does not deploy or host the web application.
-
 # Check that the script runs as root
 if [ "$(id -u)" -ne 0 ]; then
     echo "Please run this script using sudo."
