@@ -41,7 +41,7 @@ resource "aws_instance" "my_instance" {
   ami                    = data.aws_ssm_parameter.al2023.value
   instance_type          = "t3.medium" # Jenkins + Maven/Docker builds need more than 1 GB RAM
   vpc_security_group_ids = [aws_security_group.web_sg.id]
-  iam_instance_profile   = "Bootcamp-Instance-Profile "
+  iam_instance_profile   = "Bootcamp-Instance-Profile"
 
   root_block_device {
     volume_size = 20 # default 8 GB is too small for Jenkins + Docker images
