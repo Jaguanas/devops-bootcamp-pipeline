@@ -3,23 +3,10 @@ provider "aws" {
   region = "eu-west-1"
 }
 
-# Latest Amazon Linux 2023 AMI
-data "aws_ssm_parameter" "al2023" {
-  name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
-}
-
 # Firewall
 resource "aws_security_group" "web_sg" {
   name        = "devops-bootcamp-sg"
-  description = "HTTP and Jenkins ports"
-
-  ingress {
-    description = "HTTP (NGINX / public entry point)"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  description = "Jenkins port"
 
   ingress {
     description = "Jenkins UI and GitHub webhook"
@@ -38,7 +25,7 @@ resource "aws_security_group" "web_sg" {
 }
 
 resource "aws_instance" "my_instance" {
-  ami                    = data.aws_ssm_parameter.al2023.value
+  ami                    = "ami-0a3ef1de594e520c9"
   instance_type          = "t3.medium" # Jenkins + Maven/Docker builds need more than 1 GB RAM
   vpc_security_group_ids = [aws_security_group.web_sg.id]
   iam_instance_profile   = "Bootcamp-Instance-Profile"
@@ -52,13 +39,13 @@ resource "aws_instance" "my_instance" {
   # Jenkins, Java, NGINX and the app are installed by the Ansible playbook.
   user_data = <<-EOT
     #!/bin/bash
-    dnf update -y
-    dnf install -y docker git python3-pip
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update -y
+    apt-get install -y docker.io git ansible
     systemctl enable --now docker
-    usermod -aG docker ec2-user
-    pip3 install ansible
+    usermod -aG docker ubuntu
     echo "bootstrap complete: $(date)" > /var/log/bootstrap-done.txt
-  EOT
+    EOT
 
   tags = {
     Name = "Team3-TerraformEC2Instance"
