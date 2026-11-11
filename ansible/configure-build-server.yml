@@ -1,0 +1,19 @@
+---
+- name: Configure EC2 build server
+  hosts: build_servers
+  become: true
+
+  tasks:
+    - name: Install Git and Docker
+      ansible.builtin.apt:
+        name:
+          - git
+          - docker.io
+        state: present
+        update_cache: true
+
+    - name: Ensure Docker is running
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
