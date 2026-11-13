@@ -5,22 +5,33 @@ provider "aws" {
 
 # Firewall
 resource "aws_security_group" "web_sg" {
-  name        = "devops-bootcamp-sg"
-  description = "Jenkins port"
+  name        = "team3-concourse-sg"
+  description = "Concourse web UI (8080) for team 3"
 
   ingress {
-    description = "Jenkins UI and GitHub webhook"
+    description = "Concourse"
     from_port   = 8080
     to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
