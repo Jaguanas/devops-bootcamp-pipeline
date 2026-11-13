@@ -12,11 +12,12 @@
         fail_msg: "This playbook supports Ubuntu only."
 
   tasks:
-    - name: Ensure Git and Docker are installed
+    - name: Install Git, Docker and Docker Compose
       ansible.builtin.apt:
         name:
           - git
           - docker.io
+          - docker-compose-v2
         state: present
         update_cache: true
 
@@ -25,3 +26,11 @@
         name: docker
         state: started
         enabled: true
+
+    - name: Create Concourse configuration directory
+      ansible.builtin.file:
+        path: /opt/concourse
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
