@@ -46,8 +46,12 @@ resource "aws_instance" "my_instance" {
     EOT
 
   tags = {
-    Name = "Team3-TerraformEC2Instance"
+    Name = "Team3-ConcourseServer"
   }
+}
+
+output "concourse_url" {
+  value = "http://${aws_instance.my_instance.public_ip}:8080"
 }
 
 output "public_ip" {
