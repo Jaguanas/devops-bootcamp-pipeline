@@ -19,7 +19,7 @@
           - docker.io
           - docker-compose-v2
         state: present
-        update_cache: true
+        update_cache: "{{ not ansible_check_mode }}"
 
     - name: Ensure Docker is running
       ansible.builtin.systemd:
