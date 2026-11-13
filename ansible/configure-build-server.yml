@@ -22,7 +22,7 @@
         update_cache: true
 
     - name: Ensure Docker is running
-      ansible.builtin.systemd_service:
+      ansible.builtin.systemd:
         name: docker
         state: started
         enabled: true
