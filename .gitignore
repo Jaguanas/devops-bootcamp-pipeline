@@ -15,4 +15,5 @@ crash.log
 
 # OS / editor
 .DS_Store
-.vscode/
+.vscode/__pycache__/
+*.pyc

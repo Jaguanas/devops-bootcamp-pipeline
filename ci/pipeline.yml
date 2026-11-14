@@ -1,0 +1,80 @@
+resources:
+  - name: repo
+    type: git
+    source:
+      uri: https://github.com/Jaguanas/devops-bootcamp-pipeline.git
+      branch: dev
+
+  - name: app-image
+    type: registry-image
+    source:
+      repository: ricardssmans/app
+      tag: latest
+      username: ricardssmans
+      password: ((dockerhub_token))
+
+jobs:
+  - name: build-and-test
+    serial: true
+    plan:
+      - get: repo
+        trigger: true
+
+      - task: test-php
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: php
+              tag: 8.3-cli-alpine
+          inputs:
+            - name: repo
+          run:
+            path: php
+            args:
+              - -l
+              - repo/app/index.php
+
+      - task: build-docker-image
+        privileged: true
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: concourse/oci-build-task
+          inputs:
+            - name: repo
+          outputs:
+            - name: image
+          params:
+            CONTEXT: repo
+          run:
+            path: build
+
+      - put: app-image
+        params:
+          image: image/image.tar
+
+
+      - task: deploy-to-fargate
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: python
+              tag: "3.12-slim"
+          inputs:
+            - name: repo
+          params:
+            IMAGE_URI: ricardssmans/app:latest
+            DEPLOY_ENABLED: "no"
+          run:
+            path: sh
+            args:
+              - -ec
+              - |
+                pip install --quiet boto3
+                python repo/ci/deploy.py
