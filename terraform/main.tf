@@ -16,13 +16,6 @@ resource "aws_security_group" "web_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   egress {
     from_port   = 443
     to_port     = 443
@@ -55,7 +48,7 @@ resource "aws_instance" "my_instance" {
 
   metadata_options {
     http_tokens                 = "required"
-    http_put_response_hop_limit = 2
+    http_put_response_hop_limit = 3
   }
 
   # Bash bootstrap (first boot only): tools the Ansible playbook relies on.
