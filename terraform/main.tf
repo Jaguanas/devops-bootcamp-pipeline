@@ -30,19 +30,35 @@ resource "aws_security_group" "web_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  egress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   lifecycle {
     create_before_destroy = true
   }
 }
 
+resource "aws_eip" "concourse" {
+  instance = aws_instance.my_instance.id
+  domain   = "vpc"
+}
+
 resource "aws_instance" "my_instance" {
   ami                    = "ami-0a3ef1de594e520c9"
-  instance_type          = "t3.medium" # Jenkins + Maven/Docker builds need more than 1 GB RAM
+  instance_type          = "t3.medium"
   vpc_security_group_ids = [aws_security_group.web_sg.id]
   iam_instance_profile   = "Bootcamp-Instance-Profile"
 
+  metadata_options {
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 2
+  }
+
   # Bash bootstrap (first boot only): tools the Ansible playbook relies on.
-  # Jenkins, Java, NGINX and the app are installed by the Ansible playbook.
   user_data = <<-EOT
     #!/bin/bash
     set -e
@@ -62,9 +78,5 @@ resource "aws_instance" "my_instance" {
 }
 
 output "concourse_url" {
-  value = "http://${aws_instance.my_instance.public_ip}:8080"
-}
-
-output "public_ip" {
-  value = aws_instance.my_instance.public_ip
+  value = "http://${aws_eip.concourse.public_ip}:8080"
 }
