@@ -70,7 +70,7 @@ jobs:
             - name: repo
           params:
             IMAGE_URI: ricardssmans/app:latest
-            DEPLOY_ENABLED: "no"
+            DEPLOY_ENABLED: "yes"
           run:
             path: sh
             args:
