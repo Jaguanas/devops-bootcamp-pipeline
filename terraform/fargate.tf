@@ -9,9 +9,9 @@ variable "app_name" {
 }
 
 variable "app_image" {
-  description = "Public Docker Hub image. nginx is a placeholder until our own image exists."
+  description = "Docker Hub image for our app."
   type        = string
-  default     = "nginx:stable"
+  default     = "ricardssmans/app:1.0"
 }
 
 # Default network of the account
@@ -79,7 +79,7 @@ resource "aws_ecs_service" "app" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = data.aws_subnets.app_subnets.ids
+    subnets          = ["subnet-0085786c1374a372c"]
     security_groups  = [aws_security_group.task_sg.id]
     assign_public_ip = true # needed to pull the image and to reach the app
   }
