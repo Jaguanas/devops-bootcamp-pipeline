@@ -1,0 +1,53 @@
+services:
+  concourse-db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:?Required}"
+      POSTGRES_USER: "${POSTGRES_USER:?Required}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Required}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  concourse:
+    image: concourse/concourse:latest
+    command: quickstart
+    restart: unless-stopped
+    privileged: true
+    cgroup: host
+
+    depends_on:
+      concourse-db:
+        condition: service_healthy
+
+    ports:
+      - "127.0.0.1:8080:8080"
+
+    environment:
+      # Fixes tested on our Ubuntu EC2
+      CONCOURSE_WORKER_RUNTIME: guardian
+      CONCOURSE_GARDEN_DNS_SERVER: "169.254.169.253"
+
+      # PostgreSQL connection
+      CONCOURSE_POSTGRES_HOST: concourse-db
+      CONCOURSE_POSTGRES_USER: "${POSTGRES_USER:?Required}"
+      CONCOURSE_POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Required}"
+      CONCOURSE_POSTGRES_DATABASE: "${POSTGRES_DB:?Required}"
+
+      # Concourse settings
+      CONCOURSE_EXTERNAL_URL: "${CONCOURSE_EXTERNAL_URL:?Required}"
+      CONCOURSE_ADD_LOCAL_USER: "${CONCOURSE_ADD_LOCAL_USER:?Required}"
+      CONCOURSE_MAIN_TEAM_LOCAL_USER: "${CONCOURSE_MAIN_TEAM_LOCAL_USER:?Required}"
+      CONCOURSE_WORKER_BAGGAGECLAIM_DRIVER: "${CONCOURSE_WORKER_BAGGAGECLAIM_DRIVER:?Required}"
+      CONCOURSE_CLIENT_SECRET: "${CONCOURSE_CLIENT_SECRET:?Required}"
+      CONCOURSE_TSA_CLIENT_SECRET: "${CONCOURSE_TSA_CLIENT_SECRET:?Required}"
+      CONCOURSE_CLUSTER_NAME: "${CONCOURSE_CLUSTER_NAME:?Required}"
+      CONCOURSE_WORKER_CONTAINERD_DNS_SERVER: "${CONCOURSE_WORKER_CONTAINERD_DNS_SERVER:?Required}"
+
+volumes:
+  postgres_data:
