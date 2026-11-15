@@ -36,26 +36,32 @@ jobs:
               - -l
               - repo/app/index.php
 
+      
       - task: build-docker-image
-        privileged: true
         config:
           platform: linux
           image_resource:
             type: registry-image
             source:
-              repository: concourse/oci-build-task
+              repository: ghcr.io/osscontainertools/kaniko
+              tag: v1.29.1-debug
           inputs:
             - name: repo
           outputs:
             - name: image
-          params:
-            CONTEXT: repo
           run:
-            path: build
+            path: /bin/sh
+            args:
+              - -ec
+              - |
+                /kaniko/executor \
+                  --context="dir://$(pwd)/repo" \
+                  --dockerfile="$(pwd)/repo/Dockerfile" \
+                  --destination=ricardssmans/app:latest \
+                  --no-push \
+                  --tar-path="$(pwd)/image/image.tar"
 
-      - put: app-image
-        params:
-          image: image/image.tar
+                test -s image/image.tar
 
 
       - task: deploy-to-fargate
