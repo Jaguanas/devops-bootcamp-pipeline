@@ -1,0 +1,82 @@
+
+---
+- name: Deploy Concourse CI server
+  hosts: build_servers
+  become: true
+
+  tasks:
+    - name: Ensure Concourse directory exists
+      ansible.builtin.file:
+        path: /opt/concourse
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Check for private Concourse configuration
+      ansible.builtin.stat:
+        path: /opt/concourse/.env
+      register: concourse_env
+
+    - name: Require private configuration
+      ansible.builtin.assert:
+        that:
+          - concourse_env.stat.isreg | default(false)
+        fail_msg: "Create /opt/concourse/.env securely before deploying."
+
+    - name: Copy candidate Concourse Compose file
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../concourse/compose.yml"
+        dest: /opt/concourse/compose.candidate.yml
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Validate candidate configuration
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - /opt/concourse/.env
+          - -f
+          - /opt/concourse/compose.candidate.yml
+          - config
+          - --quiet
+      changed_when: false
+
+    - name: Install validated configuration
+      ansible.builtin.copy:
+        src: /opt/concourse/compose.candidate.yml
+        dest: /opt/concourse/compose.yml
+        remote_src: true
+        backup: true
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Start Concourse services
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - /opt/concourse/.env
+          - -f
+          - /opt/concourse/compose.yml
+          - up
+          - -d
+      register: compose_result
+      changed_when: >
+        'Created' in compose_result.stderr or
+        'Recreated' in compose_result.stderr or
+        'Started' in compose_result.stderr
+
+    - name: Verify Concourse web interface
+      ansible.builtin.uri:
+        url: http://127.0.0.1:8080
+        status_code: 200
+      register: concourse_web
+      retries: 10
+      delay: 3
+      until: concourse_web.status == 200
