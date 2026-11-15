@@ -36,7 +36,6 @@ jobs:
               - -l
               - repo/app/index.php
 
-      
       - task: build-docker-image
         config:
           platform: linux
@@ -63,6 +62,9 @@ jobs:
 
                 test -s image/image.tar
 
+      - put: app-image
+        params:
+          image: image/image.tar
 
       - task: deploy-to-fargate
         config:
