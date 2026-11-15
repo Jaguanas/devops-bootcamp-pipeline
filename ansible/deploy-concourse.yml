@@ -26,7 +26,7 @@
 
     - name: Copy candidate Concourse Compose file
       ansible.builtin.copy:
-        src: ../concourse/compose.yml
+        src: "{{ playbook_dir }}/../concourse/compose.yml"
         dest: /opt/concourse/compose.candidate.yml
         owner: root
         group: root
