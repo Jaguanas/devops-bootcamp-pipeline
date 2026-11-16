@@ -69,7 +69,3 @@ resource "aws_instance" "my_instance" {
     Name = "Team3-ConcourseServer"
   }
 }
-
-output "concourse_url" {
-  value = "http://${aws_eip.concourse.public_ip}:8080"
-}

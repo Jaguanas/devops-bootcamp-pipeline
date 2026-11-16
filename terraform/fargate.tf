@@ -1,6 +1,6 @@
 # fargate.tf
 locals {
-  app = "team3-app" # name prefix
+  app = "team3-app"
 }
 
 resource "aws_security_group" "task_sg" {
@@ -37,14 +37,14 @@ resource "aws_ecs_task_definition" "app" {
   container_definitions = jsonencode([
     {
       name         = local.app
-      image        = "ricardssmans/app:1.0" # first version; the pipeline deploys newer ones
+      image        = "ricardssmans/app:latest"
       essential    = true
       portMappings = [{ containerPort = 80, protocol = "tcp" }]
     }
   ])
 }
 
-# Keeps 1 copy of the recipe running
+# Keeps 1 copy running
 resource "aws_ecs_service" "app" {
   name            = "${local.app}-service"
   cluster         = aws_ecs_cluster.app.id
