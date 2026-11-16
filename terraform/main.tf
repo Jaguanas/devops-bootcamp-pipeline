@@ -3,26 +3,13 @@ provider "aws" {
   region = "eu-west-1"
 }
 
-# Latest Amazon Linux 2023 AMI
-data "aws_ssm_parameter" "al2023" {
-  name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
-}
-
 # Firewall
 resource "aws_security_group" "web_sg" {
-  name        = "devops-bootcamp-sg"
-  description = "HTTP and Jenkins ports"
+  name        = "team3-concourse-sg"
+  description = "Concourse web UI (8080) for team 3"
 
   ingress {
-    description = "HTTP (NGINX / public entry point)"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "Jenkins UI and GitHub webhook"
+    description = "Concourse"
     from_port   = 8080
     to_port     = 8080
     protocol    = "tcp"
@@ -30,41 +17,59 @@ resource "aws_security_group" "web_sg" {
   }
 
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  egress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_eip" "concourse" {
+  instance = aws_instance.my_instance.id
+  domain   = "vpc"
 }
 
 resource "aws_instance" "my_instance" {
-  ami                    = data.aws_ssm_parameter.al2023.value
-  instance_type          = "t3.medium" # Jenkins + Maven/Docker builds need more than 1 GB RAM
+  ami                    = "ami-0a3ef1de594e520c9"
+  instance_type          = "t3.medium"
   vpc_security_group_ids = [aws_security_group.web_sg.id]
   iam_instance_profile   = "Bootcamp-Instance-Profile"
 
-  root_block_device {
-    volume_size = 20 # default 8 GB is too small for Jenkins + Docker images
-    volume_type = "gp3"
+  metadata_options {
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 3
   }
 
   # Bash bootstrap (first boot only): tools the Ansible playbook relies on.
-  # Jenkins, Java, NGINX and the app are installed by the Ansible playbook.
   user_data = <<-EOT
     #!/bin/bash
-    dnf update -y
-    dnf install -y docker git python3-pip
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+    APT="apt-get -o DPkg::Lock::Timeout=300 -y"
+    $APT update
+    $APT install docker.io git ansible
     systemctl enable --now docker
-    usermod -aG docker ec2-user
-    pip3 install ansible
+    usermod -aG docker ubuntu
+    usermod -aG docker ssm-user || true
     echo "bootstrap complete: $(date)" > /var/log/bootstrap-done.txt
-  EOT
+    EOT
 
   tags = {
-    Name = "Team3-TerraformEC2Instance"
+    Name = "Team3-ConcourseServer"
   }
 }
 
-output "public_ip" {
-  value = aws_instance.my_instance.public_ip
+output "concourse_url" {
+  value = "http://${aws_eip.concourse.public_ip}:8080"
 }

@@ -1,0 +1,25 @@
+---
+- name: Prepare Concourse CI
+  hosts: build_servers
+  become: true
+
+  tasks:
+    - name: Create secure keys directory
+      ansible.builtin.file:
+        path: /opt/concourse/keys
+        state: directory
+        owner: root
+        group: root
+        mode: '0700'
+
+    - name: Generate Concourse keys
+      ansible.builtin.command: >
+        ssh-keygen -q -t rsa -b 4096 -m PEM -N ""
+        -f /opt/concourse/keys/{{ item }}
+      args:
+        creates: /opt/concourse/keys/{{ item }}
+      loop:
+        - session_signing_key
+        - tsa_host_key
+        - worker_key
+      no_log: true

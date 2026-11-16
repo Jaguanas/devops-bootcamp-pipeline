@@ -1,0 +1,88 @@
+resources:
+  - name: repo
+    type: git
+    source:
+      uri: https://github.com/Jaguanas/devops-bootcamp-pipeline.git
+      branch: dev
+
+  - name: app-image
+    type: registry-image
+    source:
+      repository: ricardssmans/app
+      tag: latest
+      username: ricardssmans
+      password: ((dockerhub_token))
+
+jobs:
+  - name: build-and-test
+    serial: true
+    plan:
+      - get: repo
+        trigger: true
+
+      - task: test-php
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: php
+              tag: 8.3-cli-alpine
+          inputs:
+            - name: repo
+          run:
+            path: php
+            args:
+              - -l
+              - repo/app/index.php
+
+      - task: build-docker-image
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: ghcr.io/osscontainertools/kaniko
+              tag: v1.29.1-debug
+          inputs:
+            - name: repo
+          outputs:
+            - name: image
+          run:
+            path: /bin/sh
+            args:
+              - -ec
+              - |
+                /kaniko/executor \
+                  --context="dir://$(pwd)/repo" \
+                  --dockerfile="$(pwd)/repo/Dockerfile" \
+                  --destination=ricardssmans/app:latest \
+                  --no-push \
+                  --tar-path="$(pwd)/image/image.tar"
+
+                test -s image/image.tar
+
+      - put: app-image
+        params:
+          image: image/image.tar
+
+      - task: deploy-to-fargate
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: python
+              tag: "3.12-slim"
+          inputs:
+            - name: repo
+          params:
+            IMAGE_URI: ricardssmans/app:latest
+            DEPLOY_ENABLED: "yes"
+          run:
+            path: sh
+            args:
+              - -ec
+              - |
+                pip install --quiet boto3
+                python repo/ci/deploy.py
