@@ -13,7 +13,8 @@ $version = "1.1";
     <h1>DevOps Capstone Project</h1>
     <p>Application successfully deployed!</p>
     <p>Version: <?php echo $version; ?></p>
-    <p>Automatic CI/CD deployment test - November 15, 2026</p>
+    <p>Automatic CI/CD deployment test</p>
     <p>2026-11-16</p>
+    <p>Test #2</p>
 </body>
 </html>
